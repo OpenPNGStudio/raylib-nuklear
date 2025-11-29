@@ -884,6 +884,7 @@ nk_rect RectangleToNuklear(struct nk_context* ctx, Rectangle rect)
 NK_API struct nk_image
 TextureToNuklear(Texture tex)
 {
+    SetTextureFilter(tex, TEXTURE_FILTER_BILINEAR);
 	// Declare the img to store data and allocate memory
 	// For the texture
 	struct nk_image img;
