@@ -771,13 +771,15 @@ nk_raylib_input_mouse(struct nk_context * ctx)
     nk_input_button(ctx, NK_BUTTON_RIGHT, mouseX, mouseY, IsMouseButtonDown(MOUSE_RIGHT_BUTTON));
     nk_input_button(ctx, NK_BUTTON_MIDDLE, mouseX, mouseY, IsMouseButtonDown(MOUSE_MIDDLE_BUTTON));
 
-    // Mouse Wheel
-    float mouseWheel = GetMouseWheelMove();
-    if (mouseWheel != 0.0f) {
-        struct nk_vec2 mouseWheelMove;
-        mouseWheelMove.x = 0.0f;
-        mouseWheelMove.y = mouseWheel;
-        nk_input_scroll(ctx, mouseWheelMove);
+    if (nk_item_is_any_active(ctx)) {
+        // Mouse Wheel
+        float mouseWheel = GetMouseWheelMove();
+        if (mouseWheel != 0.0f) {
+            struct nk_vec2 mouseWheelMove;
+            mouseWheelMove.x = 0.0f;
+            mouseWheelMove.y = mouseWheel;
+            nk_input_scroll(ctx, mouseWheelMove);
+        }
     }
 }
 
