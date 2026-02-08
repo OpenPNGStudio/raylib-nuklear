@@ -545,7 +545,9 @@ DrawNuklear(struct nk_context * ctx)
                 Color top = ColorFromNuklear(rectangle->top);
                 Color bottom = ColorFromNuklear(rectangle->bottom);
                 Color right = ColorFromNuklear(rectangle->right);
+                BeginBlendMode(BLEND_ALPHA_PREMULTIPLY);
                 DrawRectangleGradientEx(position, left, bottom, right, top);
+                EndBlendMode();
             } break;
 
             case NK_COMMAND_CIRCLE: {
