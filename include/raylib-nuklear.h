@@ -60,7 +60,7 @@ extern "C" {
 #endif
 
 NK_API struct nk_context* InitNuklear(int fontSize);                // Initialize the Nuklear GUI context using raylib's font
-NK_API struct nk_context* InitNuklearEx(Font font, float fontSize); // Initialize the Nuklear GUI context, with a custom font
+NK_API struct nk_context* InitNuklearEx(void *ctx, int font, float fontSize);  // Initialize the Nuklear GUI context, with a custom font
 NK_API Font LoadFontFromNuklear(int fontSize);                      // Loads the default Nuklear font
 NK_API void UpdateNuklear(struct nk_context * ctx);                 // Update the input state and internal components for Nuklear
 NK_API void UpdateNuklearEx(struct nk_context * ctx, float deltaTime); // Update the input state and internal components for Nuklear, with a custom frame time
@@ -156,6 +156,11 @@ typedef struct NuklearUserData {
     float scaling; // The scaling of the Nuklear user interface.
 } NuklearUserData;
 
+typedef struct {
+    void *ctx;
+    int font;
+} FontData;
+
 /**
  * Nuklear callback; Get the width of the given text.
  *
@@ -179,6 +184,8 @@ nk_raylib_font_get_text_width(nk_handle handle, float height, const char *text, 
     return 0;
 }
 
+float measure_text(void *ctx, int font, const char *txt, float height);
+
 /**
  * Nuklear callback; Get the width of the given text (userFont version)
  *
@@ -194,7 +201,8 @@ nk_raylib_font_get_text_width_user_font(nk_handle handle, float height, const ch
         // Spacing is determined by the font size multiplied by RAYLIB_NUKLEAR_FONT_SPACING_RATIO.
         // Raylib only counts the spacing between characters, but Nuklear expects one spacing to be
         // counter for every character in the string:
-        return MeasureTextEx(*(Font*)handle.ptr, subtext, height, height * RAYLIB_NUKLEAR_FONT_SPACING_RATIO).x + height * RAYLIB_NUKLEAR_FONT_SPACING_RATIO;
+        FontData *data = handle.ptr;
+        return measure_text(data->ctx, data->font, subtext, height) + height * RAYLIB_NUKLEAR_FONT_SPACING_RATIO;
     }
 
     return 0;
@@ -345,25 +353,15 @@ InitNuklear(int fontSize)
  * @return The nuklear context, or NULL on error.
  */
 NK_API struct nk_context*
-InitNuklearEx(Font font, float fontSize)
+InitNuklearEx(void *ctx, int font, float fontSize)
 {
-    // Copy the font to a new raylib font pointer.
-    struct Font* newFont = (struct Font*)MemAlloc(sizeof(struct Font));
-
-    // Use the default font size if desired.
-    if (fontSize <= 0.0f) {
-        fontSize = (float)RAYLIB_NUKLEAR_DEFAULT_FONTSIZE;
-    }
-    newFont->baseSize = font.baseSize;
-    newFont->glyphCount = font.glyphCount;
-    newFont->glyphPadding = font.glyphPadding;
-    newFont->glyphs = font.glyphs;
-    newFont->recs = font.recs;
-    newFont->texture = font.texture;
-
+    FontData *data = malloc(sizeof(FontData));
+    data->ctx = ctx;
+    data->font = font;
+    
     // Create the nuklear user font.
     struct nk_user_font* userFont = (struct nk_user_font*)MemAlloc(sizeof(struct nk_user_font));
-    userFont->userdata = nk_handle_ptr(newFont);
+    userFont->userdata = nk_handle_ptr(data);
     userFont->height = fontSize;
     userFont->width = nk_raylib_font_get_text_width_user_font;
 
@@ -450,6 +448,9 @@ ColorToNuklearF(Color color)
 {
     return nk_color_cf(ColorToNuklear(color));
 }
+
+void draw_text(void *ctx, int font, float x, float y, const char *txt,
+    float height, Color color);
 
 /**
  * Draw the given Nuklear context in raylib.
@@ -545,9 +546,7 @@ DrawNuklear(struct nk_context * ctx)
                 Color top = ColorFromNuklear(rectangle->top);
                 Color bottom = ColorFromNuklear(rectangle->bottom);
                 Color right = ColorFromNuklear(rectangle->right);
-                BeginBlendMode(BLEND_ALPHA_PREMULTIPLY);
                 DrawRectangleGradientEx(position, left, bottom, right, top);
-                EndBlendMode();
             } break;
 
             case NK_COMMAND_CIRCLE: {
@@ -643,10 +642,11 @@ DrawNuklear(struct nk_context * ctx)
                 const struct nk_command_text *text = (const struct nk_command_text*)cmd;
                 Color color = ColorFromNuklear(text->foreground);
                 float fontSize = text->font->height * scale;
-                Font* font = (Font*)text->font->userdata.ptr;
+                FontData* font = (FontData*)text->font->userdata.ptr;
                 if (font != NULL) {
                     Vector2 position = {(float)text->x * scale, (float)text->y * scale};
-                    DrawTextEx(*font, (const char*)text->string, position, fontSize, fontSize * RAYLIB_NUKLEAR_FONT_SPACING_RATIO, color);
+                    draw_text(font->ctx, font->font, position.x, position.y,
+                        (const char*) text->string, fontSize, color);
                 }
                 else {
                     DrawText((const char*)text->string, (int)(text->x * scale), (int)(text->y * scale), (int)fontSize, color);
