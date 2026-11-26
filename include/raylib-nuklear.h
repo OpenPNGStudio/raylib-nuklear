@@ -358,7 +358,7 @@ InitNuklearEx(void *ctx, int font, float fontSize)
     FontData *data = malloc(sizeof(FontData));
     data->ctx = ctx;
     data->font = font;
-    
+
     // Create the nuklear user font.
     struct nk_user_font* userFont = (struct nk_user_font*)MemAlloc(sizeof(struct nk_user_font));
     userFont->userdata = nk_handle_ptr(data);
@@ -641,7 +641,7 @@ DrawNuklear(struct nk_context * ctx)
             case NK_COMMAND_TEXT: {
                 const struct nk_command_text *text = (const struct nk_command_text*)cmd;
                 Color color = ColorFromNuklear(text->foreground);
-                float fontSize = text->font->height * scale;
+                float fontSize = text->height * scale;
                 FontData* font = (FontData*)text->font->userdata.ptr;
                 if (font != NULL) {
                     Vector2 position = {(float)text->x * scale, (float)text->y * scale};
